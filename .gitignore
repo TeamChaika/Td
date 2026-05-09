@@ -1,0 +1,73 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# --- Node ---
+node_modules/
+.pnpm-store/
+.next/
+out/
+.turbo/
+next-env.d.ts
+
+# --- Env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Testing ---
+playwright-report/
+test-results/
+coverage/
+e2e/.auth/
+
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Docker / local ---
+.docker/
+docker-compose.override.yml
+
+# --- Логи и дампы ---
+*.log
+logs/
+*.sql.gz
+dump.sql
+
+# --- Generated ---
+frontend/src/types/api.d.ts

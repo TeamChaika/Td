@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paytools"
+version = "0.1.0"
+description = "TD Pay — Tickets & Deposits Pay backend."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Proprietary" }
+authors = [{ name = "TD Pay team" }]
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "redis>=5.2",
+    "arq>=0.26",
+    "httpx>=0.28",
+    "aiosmtplib>=3.0",
+    "jinja2>=3.1",
+    "weasyprint>=63",
+    "uuid-utils>=0.10",
+    "bcrypt>=4.2",
+    "pyjwt[crypto]>=2.10",
+    "cryptography>=44",
+    "structlog>=24.4",
+    "python-multipart>=0.0.18",
+    "boto3>=1.35",
+    "aioboto3>=14.1",
+    "pillow>=11.0",
+    "python-slugify>=8.0",
+    "openpyxl>=3.1",
+    "qrcode[pil]>=8.0",
+    "email-validator>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-redis",
+    "types-boto3",
+    "fakeredis>=2.26",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["paytools*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "RUF"]
+# RUF001-003 — ложноположительные срабатывания на кириллицу в комментариях/строках
+# (у нас комментарии на русском, это конвенция проекта — см. AGENTS.md).
+# N811 — переименование PG-типов в PgUUID / PgEnum (стандартный паттерн SQLAlchemy).
+ignore = ["RUF001", "RUF002", "RUF003", "N811"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["N802", "N803", "E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+plugins = ["pydantic.mypy"]
+exclude = ["alembic/versions", "build"]
+
+[[tool.mypy.overrides]]
+module = ["qrcode.*", "weasyprint.*", "arq.*", "smsaero.*", "aioboto3.*", "aioboto3"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true

@@ -1,0 +1,21 @@
+name: Deploy
+
+# Workflow подготовлен как заглушка. Полная реализация — в Phase 9 (см. docs/specs/phase-9-deploy.md).
+# Сейчас workflow намеренно не срабатывает: все job-ы условно пропускаются через `if`.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  deploy-placeholder:
+    # Явно отключено до Phase 9
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notice
+        run: |
+          echo "Deploy pipeline будет реализован в Phase 9."
+          echo "См. docs/specs/phase-9-deploy.md"

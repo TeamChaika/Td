@@ -1,0 +1,168 @@
+# docker-compose для локальной разработки.
+# Продакшн-конфиг будет добавлен в Phase 9 как docker-compose.prod.yml.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tdpay-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tdpay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tdpay}
+      POSTGRES_DB: ${POSTGRES_DB:-tdpay}
+    ports:
+      - "5432:5432"
+    volumes:
+      - tdpay_postgres_data:/var/lib/postgresql/data
+    networks:
+      - tdpay_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tdpay} -d ${POSTGRES_DB:-tdpay}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: tdpay-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - tdpay_redis_data:/data
+    networks:
+      - tdpay_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: tdpay-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - tdpay_net
+
+  minio:
+    image: minio/minio:latest
+    container_name: tdpay-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # Web console
+    volumes:
+      - tdpay_minio_data:/data
+    networks:
+      - tdpay_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    build:
+      context: ./backend
+      target: dev
+    image: tdpay-backend:dev
+    container_name: tdpay-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Переопределяем host'ы на имена сервисов в сети компоуза
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tdpay}:${POSTGRES_PASSWORD:-tdpay}@postgres:5432/${POSTGRES_DB:-tdpay}
+      REDIS_URL: redis://redis:6379/0
+      S3_ENDPOINT: http://minio:9000
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+    volumes:
+      # Hot reload для кода
+      - ./backend/src/paytools:/app/paytools
+      - ./backend/alembic:/app/alembic
+      - ./backend/tests:/app/tests
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tdpay_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    image: tdpay-frontend:dev
+    container_name: tdpay-frontend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_PLATFORM_DOMAIN: ${PLATFORM_DOMAIN:-tdpay.local}
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/tests:/app/tests
+      - ./frontend/next.config.mjs:/app/next.config.mjs
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tailwind.config.ts:/app/tailwind.config.ts
+      - ./frontend/postcss.config.mjs:/app/postcss.config.mjs
+      - ./frontend/vitest.config.ts:/app/vitest.config.ts
+      - ./frontend/.eslintrc.json:/app/.eslintrc.json
+      - ./frontend/.prettierrc:/app/.prettierrc
+    ports:
+      - "3000:3000"
+    networks:
+      - tdpay_net
+
+  worker:
+    build:
+      context: ./backend
+      target: dev
+    image: tdpay-backend:dev
+    container_name: tdpay-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tdpay}:${POSTGRES_PASSWORD:-tdpay}@postgres:5432/${POSTGRES_DB:-tdpay}
+      REDIS_URL: redis://redis:6379/0
+    # arq-воркер появится в Phase 5+, пока заглушка, чтобы контейнер просто ждал
+    command: ["sh", "-c", "echo 'Worker placeholder — будет реализован в Phase 5' && tail -f /dev/null"]
+    volumes:
+      - ./backend/src/paytools:/app/paytools
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - tdpay_net
+
+volumes:
+  tdpay_postgres_data:
+  tdpay_redis_data:
+  tdpay_minio_data:
+
+networks:
+  tdpay_net:
+    driver: bridge

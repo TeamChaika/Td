@@ -19,6 +19,7 @@ from paytools.db.models.reservation import Reservation
 from paytools.db.repositories.event import EventRepository
 from paytools.db.repositories.reservation import ReservationRepository
 from paytools.db.repositories.ticket import TicketRepository
+from paytools.domain.tickets.pdf import render_tickets_pdf_bytes
 from paytools.integrations.email import (
     build_magic_link_email_html,
     build_reminder_email_html,
@@ -97,10 +98,32 @@ class NotificationService:
             reservation_id=str(reservation.id),
         )
 
+        # Генерируем PDF со всеми билетами
+        pdf_attachments: list[tuple[str, bytes, str]] = []
+        try:
+            pdf_bytes = render_tickets_pdf_bytes(
+                [
+                    {
+                        "first_name": t.guest_first_name,
+                        "last_name": t.guest_last_name,
+                        "code": t.code,
+                        "qr_payload": t.qr_payload,
+                    }
+                    for t in tickets
+                ],
+                event_title=event.title,
+                event_date=starts_at,
+                event_location=event.location_name or "",
+            )
+            pdf_attachments.append(("tickets.pdf", pdf_bytes, "application/pdf"))
+        except Exception as e:
+            logger.warning("Failed to generate PDF for reservation %s: %s", reservation_id, e)
+
         await send_email(
             to=reservation.email,
             subject=f"Билеты: {event.title}",
             html_body=html,
+            attachments=pdf_attachments,
         )
         logger.info(
             "Ticket email sent to %s for reservation %s",

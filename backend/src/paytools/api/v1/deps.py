@@ -70,6 +70,7 @@ __all__ = [
     "OrganizationRequiredError",
     "OrganizationSuspendedError",
     "OrganizerUser",
+    "ScannerUser",
     "SessionDep",
     "SuperadminUser",
     "TenantNotResolvedError",
@@ -297,6 +298,9 @@ def require_roles(
 require_superadmin = require_roles(UserRole.SUPERADMIN)
 require_organizer = require_roles(UserRole.ORGANIZER)
 require_organizer_or_above = require_roles(UserRole.ORGANIZER, UserRole.SUPERADMIN)
+require_scanner = require_roles(
+    UserRole.SCANNER, UserRole.ORGANIZER, UserRole.SUPERADMIN
+)
 
 
 # ---------------------------------------------------------------------------
@@ -349,4 +353,5 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 CurrentOrganization = Annotated[Organization, Depends(get_current_organization)]
 SuperadminUser = Annotated[User, Depends(require_superadmin)]
 OrganizerUser = Annotated[User, Depends(require_organizer)]
+ScannerUser = Annotated[User, Depends(require_scanner)]
 TenantOrganization = Annotated[Organization, Depends(get_tenant_organization)]

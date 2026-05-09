@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Any
@@ -27,22 +28,34 @@ async def send_email(
     subject: str,
     html_body: str,
     text_body: str | None = None,
+    attachments: list[tuple[str, bytes, str]] | None = None,
 ) -> None:
     """Отправить email через SMTP.
 
     Использует настройки из Settings (smtp_*).
     В dev-окружении письма уходят в MailHog (localhost:1025).
+
+    attachments — список (filename, content_bytes, mime_type).
     """
     settings = get_settings()
-    message = MIMEMultipart("alternative")
+    message = MIMEMultipart("mixed")
     message["From"] = settings.smtp_from
     message["To"] = to
     message["Subject"] = subject
 
+    # Тело письма (альтернатива: plain + html)
+    body_part = MIMEMultipart("alternative")
     if text_body:
-        message.attach(MIMEText(text_body, "plain", "utf-8"))
+        body_part.attach(MIMEText(text_body, "plain", "utf-8"))
+    body_part.attach(MIMEText(html_body, "html", "utf-8"))
+    message.attach(body_part)
 
-    message.attach(MIMEText(html_body, "html", "utf-8"))
+    # Вложения
+    if attachments:
+        for filename, content, mime_type in attachments:
+            part = MIMEApplication(content, _subtype=mime_type.split("/")[-1])
+            part.add_header("Content-Disposition", "attachment", filename=filename)
+            message.attach(part)
 
     try:
         await aiosmtplib.send(

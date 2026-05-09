@@ -431,6 +431,46 @@ export interface PromoValidateResponse {
   error_message?: string;
 }
 
+// ---- Payments (Phase 5) ----
+
+export type PaymentStatus = 'pending' | 'paid' | 'cancelled' | 'expired' | 'refunded';
+
+export interface PaymentStatusResponse {
+  payment_id: string | null;
+  reservation_id: string;
+  status: PaymentStatus;
+  amount_kopecks: number;
+  currency: string;
+  provider: 'qrmanager' | 'complimentary' | 'cash' | null;
+  qr_url: string | null;
+  qr_image_url: string | null;
+  expires_at: string | null;
+  paid_at: string | null;
+}
+
+export interface PaymentProcessResponse {
+  payment_id: string;
+  reservation_id: string;
+  status: PaymentStatus;
+  amount_kopecks: number;
+  currency: string;
+  qr_url: string | null;
+  qr_image_base64: string | null;
+  expires_at: string;
+}
+
+// ---- Tickets (Phase 5) ----
+
+export interface TicketItem {
+  id: string;
+  code: string;
+  guest_index: number;
+  guest_first_name: string;
+  guest_last_name: string;
+  status: 'issued' | 'checked_in' | 'cancelled' | 'refunded';
+  is_complimentary: boolean;
+}
+
 // ---- API Error ----
 
 export interface ApiErrorBody {

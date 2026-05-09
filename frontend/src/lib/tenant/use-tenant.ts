@@ -30,6 +30,12 @@ function detectTenantSlug(): string | null {
   return null;
 }
 
+/** Хук только для получения slug (без запроса к API). */
+export function useTenantSlug(): string | null {
+  if (typeof window === 'undefined') return null;
+  return detectTenantSlug();
+}
+
 export function useTenant() {
   const slug = detectTenantSlug();
 

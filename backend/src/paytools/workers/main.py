@@ -16,6 +16,7 @@ from arq.cron import cron
 from paytools.core.config import get_settings
 from paytools.core.logging import setup_logging
 from paytools.workers.tasks.bookings import expire_draft_reservations
+from paytools.workers.tasks.payments import expire_pending_payments
 
 
 def _redis_settings() -> RedisSettings:
@@ -51,8 +52,8 @@ class WorkerSettings:
 
     functions: ClassVar[list[Any]] = []  # Phase 5+ добавит реальные задачи
     cron_jobs: ClassVar[list[Any]] = [
-        # Запуск каждую минуту: second=0, все остальные поля по умолчанию (каждую)
         cron(expire_draft_reservations, second=0, run_at_startup=True),
+        cron(expire_pending_payments, second=30, run_at_startup=True),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown

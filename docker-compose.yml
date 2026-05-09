@@ -116,12 +116,14 @@ services:
     env_file:
       - .env
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_API_URL: http://backend:8000
       NEXT_PUBLIC_PLATFORM_DOMAIN: ${PLATFORM_DOMAIN:-tdpay.local}
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
       - ./frontend/tests:/app/tests
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/pnpm-lock.yaml:/app/pnpm-lock.yaml
       - ./frontend/next.config.mjs:/app/next.config.mjs
       - ./frontend/tsconfig.json:/app/tsconfig.json
       - ./frontend/tailwind.config.ts:/app/tailwind.config.ts

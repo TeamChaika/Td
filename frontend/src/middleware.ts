@@ -86,11 +86,14 @@ export function middleware(req: NextRequest): NextResponse {
   }
 
   const slug = extractSlug(hostname);
-  const response = NextResponse.next();
   if (slug) {
-    response.headers.set('x-tenant-slug', slug);
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set('x-tenant-slug', slug);
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    });
   }
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {

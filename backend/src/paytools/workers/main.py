@@ -4,8 +4,6 @@
 - Phase 4: `expire_draft_reservations`
 - Phase 5: `issue_tickets`, `render_ticket_pdf`, `process_qrm_webhook`
 - Phase 6: `send_ticket_email`, `send_ticket_sms`, `schedule_event_reminders`
-
-Пока — пустой воркер, docker-compose его запускает в режиме заглушки.
 """
 
 from __future__ import annotations
@@ -13,9 +11,11 @@ from __future__ import annotations
 from typing import Any, ClassVar
 
 from arq.connections import RedisSettings
+from arq.cron import cron
 
 from paytools.core.config import get_settings
 from paytools.core.logging import setup_logging
+from paytools.workers.tasks.bookings import expire_draft_reservations
 
 
 def _redis_settings() -> RedisSettings:
@@ -47,10 +47,13 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    """Настройки arq-воркера. Функции наполняются в последующих фазах."""
+    """Настройки arq-воркера."""
 
     functions: ClassVar[list[Any]] = []  # Phase 5+ добавит реальные задачи
-    cron_jobs: ClassVar[list[Any]] = []
+    cron_jobs: ClassVar[list[Any]] = [
+        # Запуск каждую минуту: second=0, все остальные поля по умолчанию (каждую)
+        cron(expire_draft_reservations, second=0, run_at_startup=True),
+    ]
     on_startup = on_startup
     on_shutdown = on_shutdown
     redis_settings = _redis_settings()

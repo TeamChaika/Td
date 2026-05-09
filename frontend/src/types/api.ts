@@ -361,6 +361,76 @@ export interface PublicEventDetail {
   status: string;
 }
 
+// ---- Reservations (Phase 4) ----
+
+export interface ReservationItemRequest {
+  tariff_id: string;
+  quantity: number;
+}
+
+export interface CreateReservationRequest {
+  event_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  items: ReservationItemRequest[];
+  custom_fields?: Record<string, unknown>;
+  promo_code?: string;
+  consent_privacy: boolean;
+  consent_offer: boolean;
+}
+
+export interface ReservationItemResponse {
+  id: string;
+  tariff_id: string;
+  tariff_name: string;
+  quantity: number;
+  price_kopecks: number;
+  subtotal_kopecks: number;
+}
+
+export interface ReservationResponse {
+  id: string;
+  status: 'pending_payment' | 'paid' | 'cancelled' | 'expired';
+  event_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  total_kopecks: number;
+  items_subtotal_kopecks: number;
+  discount_kopecks: number;
+  promo_code_id: string | null;
+  expires_at: string;
+  items: ReservationItemResponse[];
+}
+
+// ---- PromoCode validation (Phase 4) ----
+
+export interface PromoValidateItem {
+  tariff_id: string;
+  quantity: number;
+}
+
+export interface PromoValidateRequest {
+  code: string;
+  event_id: string;
+  email: string;
+  items: PromoValidateItem[];
+}
+
+export interface PromoValidateResponse {
+  valid: boolean;
+  discount_type?: 'percent' | 'fixed_amount' | 'fixed_price';
+  discount_value?: number;
+  discount_kopecks?: number;
+  code?: string;
+  description?: string;
+  error_code?: string;
+  error_message?: string;
+}
+
 // ---- API Error ----
 
 export interface ApiErrorBody {

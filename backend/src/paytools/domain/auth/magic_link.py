@@ -124,9 +124,27 @@ class MagicLinkService:
                     exc_info=True,
                 )
 
-        # Отправка email с magic-link будет реализована в Phase 6
-        # (notifications / arq). В dev-окружении ссылку можно посмотреть
-        # в Redis: redis-cli GET "magic:<token>", либо через mailhog.
+        # Отправляем magic-link email (fire-and-forget)
+        import asyncio
+
+        from paytools.domain.notifications.service import NotificationService
+        from paytools.db.repositories.event import EventRepository
+        from paytools.db.repositories.reservation import ReservationRepository
+        from paytools.db.repositories.ticket import TicketRepository
+
+        notif_svc = NotificationService(
+            self.session,
+            reservation_repo=ReservationRepository(self.session),
+            ticket_repo=TicketRepository(self.session),
+            event_repo=EventRepository(self.session),
+        )
+        asyncio.create_task(
+            notif_svc.send_magic_link_email(
+                email=email,
+                token=token,
+                ttl_minutes=int(self.TOKEN_TTL.total_seconds() // 60),
+            )
+        )
 
     # --- Верификация magic-link ---
 

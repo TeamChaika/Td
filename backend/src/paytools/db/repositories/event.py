@@ -253,3 +253,22 @@ class EventRepository(BaseRepository[Event]):
         )
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
+
+    async def find_by_time_window(
+        self, window_start: str, window_end: str
+    ) -> list[Event]:
+        """Найти published события, начинающиеся в заданном временном окне.
+
+        Используется для отправки напоминаний.
+        schedule ->> 'starts_at' извлекается из JSONB.
+        """
+        stmt = (
+            select(Event)
+            .where(
+                Event.status == EventStatus.PUBLISHED,
+                Event.schedule["starts_at"].astext >= window_start,
+                Event.schedule["starts_at"].astext <= window_end,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

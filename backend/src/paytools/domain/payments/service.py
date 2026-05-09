@@ -231,6 +231,9 @@ class PaymentService:
                 payment.reservation_id,
             )
 
+        # Отправляем уведомления (fire-and-forget)
+        self._schedule_ticket_notifications(payment.reservation_id)
+
         return payment
 
     async def confirm_payment_by_reservation(
@@ -273,6 +276,8 @@ class PaymentService:
         await self.ticket_service.issue_for_reservation(
             org_id, reservation_id
         )
+
+        self._schedule_ticket_notifications(reservation_id)
 
         return payment
 
@@ -320,6 +325,8 @@ class PaymentService:
             org_id, reservation_id
         )
 
+        self._schedule_ticket_notifications(reservation_id)
+
         return payment
 
     async def get_payment_status(
@@ -327,6 +334,38 @@ class PaymentService:
     ) -> Payment | None:
         """Получить статус платежа по бронированию."""
         return await self.payment_repo.get_by_reservation(reservation_id)
+
+    def _schedule_ticket_notifications(self, reservation_id: UUID) -> None:
+        """Запланировать отправку уведомлений о билетах (fire-and-forget)."""
+        import asyncio
+        import logging
+
+        from paytools.db.repositories.event import EventRepository
+        from paytools.db.repositories.ticket import TicketRepository
+        from paytools.domain.notifications.service import NotificationService
+
+        logger = logging.getLogger(__name__)
+
+        async def _send() -> None:
+            try:
+                from paytools.core.db import AsyncSessionLocal
+
+                async with AsyncSessionLocal() as session:
+                    async with session.begin():
+                        notif_svc = NotificationService(
+                            session,
+                            reservation_repo=ReservationRepository(session),
+                            ticket_repo=TicketRepository(session),
+                            event_repo=EventRepository(session),
+                        )
+                        await notif_svc.send_ticket_notifications(reservation_id)
+            except Exception:
+                logger.exception(
+                    "Failed to send ticket notifications for reservation %s",
+                    reservation_id,
+                )
+
+        asyncio.create_task(_send())
 
     async def expire_pending_payments(self) -> int:
         """Истечь все просроченные pending платежи.

@@ -16,6 +16,11 @@ from arq.cron import cron
 from paytools.core.config import get_settings
 from paytools.core.logging import setup_logging
 from paytools.workers.tasks.bookings import expire_draft_reservations
+from paytools.workers.tasks.notifications import (
+    schedule_event_reminders_24h,
+    schedule_event_reminders_3h,
+    send_ticket_notifications,
+)
 from paytools.workers.tasks.payments import expire_pending_payments
 
 
@@ -50,10 +55,14 @@ async def on_shutdown(ctx: dict[str, Any]) -> None:
 class WorkerSettings:
     """Настройки arq-воркера."""
 
-    functions: ClassVar[list[Any]] = []  # Phase 5+ добавит реальные задачи
+    functions: ClassVar[list[Any]] = [
+        send_ticket_notifications,
+    ]
     cron_jobs: ClassVar[list[Any]] = [
         cron(expire_draft_reservations, second=0, run_at_startup=True),
         cron(expire_pending_payments, second=30, run_at_startup=True),
+        cron(schedule_event_reminders_24h, minute=0, run_at_startup=False),
+        cron(schedule_event_reminders_3h, minute=15, run_at_startup=False),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown

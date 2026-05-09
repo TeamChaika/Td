@@ -200,3 +200,20 @@ class ReservationRepository(BaseRepository[Reservation]):
 
         result = await self.session.execute(stmt)
         return int(result.scalar_one())
+
+    async def find_by_event_and_status(
+        self,
+        event_id: UUID,
+        status: ReservationStatus,
+    ) -> list[Reservation]:
+        """Найти бронирования по событию и статусу."""
+        stmt = (
+            select(Reservation)
+            .options(selectinload(Reservation.items))
+            .where(
+                Reservation.event_id == event_id,
+                Reservation.status == status,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

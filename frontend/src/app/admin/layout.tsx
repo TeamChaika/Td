@@ -37,17 +37,22 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Редирект если не авторизован или роль не organizer.
-  // При неверной роли делаем logout (очищаем куку) перед редиректом,
-  // чтобы избежать бесконечного цикла.
+  // Не редиректим если уже на странице логина — иначе бесконечный цикл.
+  const isLoginPage = pathname === '/admin/login' || pathname === '/admin/magic-link';
+
   useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated) {
-        router.replace('/admin/login');
-      } else if (user?.role !== 'organizer') {
-        logout.mutate();
-      }
+    if (loading || isLoginPage) return;
+    if (!isAuthenticated || !user) {
+      router.replace('/admin/login');
+    } else if (user.role !== 'organizer' && user.role !== 'superadmin') {
+      logout.mutate();
     }
-  }, [loading, isAuthenticated, user, router, logout]);
+  }, [loading, isAuthenticated, user, router, logout, isLoginPage]);
+
+  // Для страниц логина/magic-link — рендерим как есть, без проверки сессии
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
 
   // Loading
   if (loading) {

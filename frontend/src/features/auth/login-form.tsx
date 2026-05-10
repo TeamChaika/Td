@@ -47,7 +47,8 @@ export function LoginForm() {
   const onLogin = async (data: LoginFormData) => {
     try {
       const session = await login.mutateAsync(data);
-      // Проверяем роль для platform
+      // Даём React обработать обновление состояния перед навигацией
+      await new Promise((r) => setTimeout(r, 100));
       if (session.user?.role === 'superadmin') {
         router.push('/platform');
       } else {

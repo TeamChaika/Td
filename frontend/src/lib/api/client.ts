@@ -12,7 +12,9 @@ import { ofetch, type FetchContext, type FetchOptions, type FetchResponse } from
 import { getAccessToken, clearSession, setAccessToken } from '@/lib/auth/session-store';
 import { ApiError } from './errors';
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+// Пустая строка → относительные URL (через Next.js rewrite proxy).
+// Явный URL → прямые запросы (для серверных компонентов).
+const baseURL = process.env.NEXT_PUBLIC_API_URL || undefined;
 
 /** Определить slug арендатора на клиенте (поддомен). */
 function detectTenantSlugOnClient(): string | null {
@@ -65,6 +67,9 @@ async function tryRefresh(): Promise<string | null> {
 function redirectToLogin(): void {
   if (typeof window === 'undefined') return;
   const path = window.location.pathname;
+  // Не редиректим если уже на странице логина — иначе бесконечный цикл
+  if (path === '/admin/login' || path === '/admin/magic-link') return;
+  if (path === '/platform/login') return;
   if (path.startsWith('/platform')) {
     window.location.href = '/platform/login?reason=session_expired';
   } else if (path.startsWith('/admin')) {
@@ -74,14 +79,24 @@ function redirectToLogin(): void {
 }
 
 let refreshPromise: Promise<string | null> | null = null;
+let refreshFailed = false;
 
-/** Скоординированный refresh: пока один запрос идёт, остальные ждут его результат. */
+/** Скоординированный refresh: пока один запрос идёт, остальные ждут его результат.
+ *  Если refresh уже провалился — не пытаемся снова до следующего логина. */
 async function refreshTokenOnce(): Promise<string | null> {
+  if (refreshFailed) return null;
   if (refreshPromise) return refreshPromise;
   refreshPromise = tryRefresh().finally(() => {
     refreshPromise = null;
   });
-  return refreshPromise;
+  const result = await refreshPromise;
+  if (result === null) refreshFailed = true;
+  return result;
+}
+
+/** Сбросить флаг после успешного логина. */
+export function resetRefreshState(): void {
+  refreshFailed = false;
 }
 
 // Базовый клиент without retry логики

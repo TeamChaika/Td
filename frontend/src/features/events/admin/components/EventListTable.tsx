@@ -214,10 +214,8 @@ export function EventListTable({
                 {/* Sold / total */}
                 <td className="py-3 px-2 whitespace-nowrap text-muted-foreground">
                   {event.sold_count}
-                  {event.capacity_policy.type === 'total' ||
-                  event.capacity_policy.type === 'hybrid'
-                    ? ` / ${event.capacity_policy.total_capacity ?? '?'}`
-                    : ''}
+                  {event.capacity_policy?.type === 'total' ? ` / ${(event.capacity_policy as any).limit ?? '?'}` : ''}
+                  {event.capacity_policy?.type === 'hybrid' ? ` / ${(event.capacity_policy as any).total ?? '?'}` : ''}
                 </td>
 
                 {/* Status */}

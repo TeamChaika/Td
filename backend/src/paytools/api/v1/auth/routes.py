@@ -54,7 +54,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
         httponly=True,
         secure=settings.is_prod,
         samesite="lax",
-        path="/api/v1/auth",
+        path="/",
     )
 
 
@@ -62,7 +62,7 @@ def _clear_refresh_cookie(response: Response) -> None:
     """Удалить httpOnly cookie ``tdpay_refresh`` при logout."""
     response.delete_cookie(
         key="tdpay_refresh",
-        path="/api/v1/auth",
+        path="/",
         httponly=True,
         secure=get_settings().is_prod,
         samesite="lax",

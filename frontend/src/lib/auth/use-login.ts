@@ -5,7 +5,7 @@
  */
 import { useMutation } from '@tanstack/react-query';
 
-import { api } from '@/lib/api/client';
+import { api, resetRefreshState } from '@/lib/api/client';
 import { setAccessToken, setSessionData } from '@/lib/auth/session-store';
 import type { LoginRequest, TokenPair, SessionData } from '@/types/api';
 
@@ -17,8 +17,8 @@ export function useLogin() {
         body: data,
       });
       setAccessToken(tokens.access_token);
+      resetRefreshState(); // сбрасываем флаг после успешного логина
 
-      // Загружаем профиль
       const session = await api<SessionData>('/api/v1/auth/me');
       setSessionData(session.user, session.organization);
 

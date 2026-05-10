@@ -29,7 +29,7 @@ export async function resolveTenant(
 ): Promise<TenantContext | null> {
   if (!slug) return null;
 
-  const baseURL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+  const baseURL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
   try {
     const res = await fetch(

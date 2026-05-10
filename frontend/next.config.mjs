@@ -5,6 +5,14 @@ const nextConfig = {
   eslint: {
     dirs: ['src'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}/api/:path*`,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       // Моки (будут удалены после перехода на S3)

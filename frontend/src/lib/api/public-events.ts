@@ -12,7 +12,7 @@ import type {
   PaginatedResponse,
 } from '@/types/api';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_BASE = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 async function fetchFromApi<T>(
   path: string,
